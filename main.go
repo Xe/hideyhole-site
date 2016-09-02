@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"io/ioutil"
 	"log"
@@ -59,6 +60,10 @@ func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, errors.New("getDiscordUser: " + resp.Status)
+	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -133,13 +138,15 @@ func main() {
 			otoken := s.Get("oauth2_token")
 			if otoken == nil {
 				http.Redirect(w, r, "/login", 302)
+				return
 			}
 
 			uid := s.Get("uid")
 			if uid == nil {
 				dUser, err := getDiscordUser(t)
 				if err != nil {
-					panic(err)
+					http.Error(w, err.Error(), 500)
+					return
 				}
 
 				s.Set("uid", dUser.ID)
