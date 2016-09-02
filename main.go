@@ -12,6 +12,7 @@ import (
 	"github.com/facebookgo/flagconfig"
 	"github.com/facebookgo/flagenv"
 	"github.com/go-martini/martini"
+	_ "github.com/lib/pq"
 	"github.com/martini-contrib/csrf"
 	moauth2 "github.com/martini-contrib/oauth2"
 	"github.com/martini-contrib/sessions"
@@ -20,6 +21,10 @@ import (
 	"golang.org/x/oauth2"
 	"gopkg.in/redis.v3"
 )
+
+func init() {
+	moauth2.PathLogout = "/xXxXxXxXxlogout"
+}
 
 var (
 	clientID      = flag.String("discord-client-id", "", "discord oauth client id")
@@ -41,7 +46,7 @@ type DiscordUser struct {
 	Username      string `json:"username"`
 	Verified      bool   `json:"verified"`
 	MfaEnabled    bool   `json:"mfa_enabled"`
-	ID            string `json:"id"`
+	ID            string `json:"id" xorm:"pk"`
 	Avatar        string `json:"avatar"`
 	Discriminator string `json:"discriminator"`
 	Email         string `json:"email"`
@@ -160,7 +165,8 @@ func main() {
 	m.Use(sessions.Sessions("cadeyforum", store))
 	m.Use(acerender.Renderer(&acerender.Options{
 		AceOptions: &ace.Options{
-			BaseDir: "views",
+			BaseDir:       "views",
+			DynamicReload: martini.Env == martini.Dev,
 			FuncMap: template.FuncMap{
 				"equals": func(a, b interface{}) bool {
 					return a == b
