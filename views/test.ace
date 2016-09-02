@@ -1,0 +1,8 @@
+= content title
+  title
+    | Cadey's Sub-Aquatic Hidey-Hole
+
+= content body
+  h1 Test
+
+  p this works!

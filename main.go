@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
-	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -16,6 +14,8 @@ import (
 	"github.com/martini-contrib/csrf"
 	moauth2 "github.com/martini-contrib/oauth2"
 	"github.com/martini-contrib/sessions"
+	"github.com/yosssi/ace"
+	"github.com/yosssi/martini-acerender"
 	"golang.org/x/oauth2"
 	"gopkg.in/redis.v3"
 )
@@ -35,6 +35,7 @@ var (
 	redisClient        *redis.Client
 )
 
+// DiscordUser is a user from discord/users/@me.
 type DiscordUser struct {
 	Username      string `json:"username"`
 	Verified      bool   `json:"verified"`
@@ -43,6 +44,20 @@ type DiscordUser struct {
 	Avatar        string `json:"avatar"`
 	Discriminator string `json:"discriminator"`
 	Email         string `json:"email"`
+}
+
+func (d *DiscordUser) Save(r *redis.Client) error {
+	data, err := json.Marshal(d)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.Set("discord:user:"+d.ID, string(data), 0).Result()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
@@ -64,14 +79,9 @@ func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 		return nil, errors.New("getDiscordUser: " + resp.Status)
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	dUser := &DiscordUser{}
 
-	err = json.NewDecoder(bytes.NewBuffer(data)).Decode(dUser)
+	err = json.NewDecoder(resp.Body).Decode(dUser)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +94,7 @@ func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	}
 
 	if !recorded {
-		_, err := redisClient.Set("discord:user:"+dUser.ID, string(data), 0).Result()
+		err := dUser.Save(redisClient)
 		if err != nil {
 			return nil, err
 		}
@@ -119,11 +129,12 @@ func main() {
 
 	m := martini.Classic()
 	store := sessions.NewCookieStore([]byte(*cookieKey))
+
 	m.Use(sessions.Sessions("cadeyforum", store))
-
+	m.Use(acerender.Renderer(&acerender.Options{
+		AceOptions: &ace.Options{BaseDir: "views"},
+	}))
 	m.Use(moauth2.NewOAuth2Provider(discordOAuthClient))
-	// m.Use(moauth2.LoginRequired)
-
 	m.Use(csrf.Generate(&csrf.Options{
 		Secret:     *cookieKey,
 		SessionKey: *guildID,
@@ -132,11 +143,11 @@ func main() {
 		},
 	}))
 
+	// Automatically fix oauth 2 data being present or not
 	m.Use(
 		func(s sessions.Session, t moauth2.Tokens, w http.ResponseWriter, r *http.Request) {
 			otoken := s.Get("oauth2_token")
 			if otoken == nil {
-				http.Redirect(w, r, "/login", 302)
 				return
 			}
 
@@ -145,13 +156,20 @@ func main() {
 				dUser, err := getDiscordUser(t)
 				if err != nil {
 					http.Error(w, err.Error(), 500)
+					log.Printf("%v", err.Error())
 					return
 				}
 
 				s.Set("uid", dUser.ID)
 			}
+
+			return
 		},
 	)
+
+	m.Get("/", func(s sessions.Session, r acerender.Render) {
+		r.HTML(200, "base:test", nil, nil)
+	})
 
 	m.RunOnAddr(":" + *port)
 }
