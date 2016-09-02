@@ -9,8 +9,6 @@ import (
 	"log"
 	"net/http"
 
-	"gopkg.in/redis.v3"
-
 	"github.com/Xe/hideyhole-site/oauth2/discord"
 	"github.com/facebookgo/flagconfig"
 	"github.com/facebookgo/flagenv"
@@ -19,6 +17,7 @@ import (
 	moauth2 "github.com/martini-contrib/oauth2"
 	"github.com/martini-contrib/sessions"
 	"golang.org/x/oauth2"
+	"gopkg.in/redis.v3"
 )
 
 var (
