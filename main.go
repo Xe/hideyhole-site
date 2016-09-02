@@ -103,6 +103,27 @@ func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	return dUser, nil
 }
 
+func populateInfo(s sessions.Session, t moauth2.Tokens) {
+	otoken := s.Get("oauth2_token")
+	if otoken == nil {
+		return
+
+	}
+
+	uid := s.Get("uid")
+	if uid == nil {
+		dUser, err := getDiscordUser(t)
+		if err != nil {
+			log.Printf("%v", err.Error())
+			return
+		}
+
+		s.Set("uid", dUser.ID)
+	}
+
+	return
+}
+
 func main() {
 	flagenv.Parse()
 	flag.Parse()
@@ -142,30 +163,7 @@ func main() {
 			http.Error(w, "Bad request", http.StatusBadRequest)
 		},
 	}))
-
-	// Automatically fix oauth 2 data being present or not
-	m.Use(
-		func(s sessions.Session, t moauth2.Tokens, w http.ResponseWriter, r *http.Request) {
-			otoken := s.Get("oauth2_token")
-			if otoken == nil {
-				return
-			}
-
-			uid := s.Get("uid")
-			if uid == nil {
-				dUser, err := getDiscordUser(t)
-				if err != nil {
-					http.Error(w, err.Error(), 500)
-					log.Printf("%v", err.Error())
-					return
-				}
-
-				s.Set("uid", dUser.ID)
-			}
-
-			return
-		},
-	)
+	m.Use(populateInfo)
 
 	m.Get("/", func(s sessions.Session, r acerender.Render) {
 		r.HTML(200, "base:test", nil, nil)
