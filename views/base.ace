@@ -2,7 +2,7 @@
 html lang=en
   head
     = yield title
-      title Cadey's Sub-Aqatic Hidey-Hole
+      title Cadey's Sub-Aquatic Hidey-Hole
 
     link rel="stylesheet" type="text/css" href="/_css/global.css"
     link rel="stylesheet" type="text/css" href="/_css/futaba.css"
@@ -29,6 +29,8 @@ html lang=en
       = yield postform
 
       = yield body
+
+      hr width="90%"
 
       .footer
         p
