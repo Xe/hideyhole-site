@@ -12,12 +12,26 @@ html lang=en
   body
     = yield adminbar
     .adminbar
-      p
-        | [ 
-        a href="/login" style="text-decoration: underline;" Login
-        |  | 
-        a href="/chat" style="text-decoration: underline;" Chat
-        |  ]
+      {{ $uid := .Session.Get "uid" }}
+      {{ if (equals $uid nil) }}
+        p
+          | [ 
+          a href="/login" style="text-decoration: underline;" Login
+          |  | 
+          a href="/chat" style="text-decoration: underline;" Chat
+          |  ]
+      {{ else }}
+        p style="line-height: 2em;"
+          | [ 
+          a href="/profile/@me" style="text-decoration: underline;" {{ .Session.Get "username" }}
+            |    
+            img src="//cdn.discordapp.com/avatars/{{ .Session.Get "uid" }}/{{ .Session.Get "avatarhash" }}.jpg" width=16 height=16 style="vertical-align: text-top;"
+          |  | 
+          a href="/chat" style="text-decoration: underline;" Chat
+          |  | 
+          a href="/logout" style="text-decoration: underline;" Logout
+          |  ]
+      {{ end }}
 
     .container
       .logo

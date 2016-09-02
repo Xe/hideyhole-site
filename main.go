@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 
@@ -60,6 +61,11 @@ func (d *DiscordUser) Save(r *redis.Client) error {
 	return nil
 }
 
+type Wrapper struct {
+	Data    interface{}
+	Session sessions.Session
+}
+
 func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	req, err := http.NewRequest("GET", "https://discordapp.com/api/users/@me", nil)
 	if err != nil {
@@ -85,8 +91,6 @@ func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Printf("%#v", dUser)
 
 	recorded, err := redisClient.Exists("discord:user:" + dUser.ID).Result()
 	if err != nil {
@@ -119,6 +123,8 @@ func populateInfo(s sessions.Session, t moauth2.Tokens) {
 		}
 
 		s.Set("uid", dUser.ID)
+		s.Set("username", dUser.Username)
+		s.Set("avatarhash", dUser.Avatar)
 	}
 
 	return
@@ -153,7 +159,14 @@ func main() {
 
 	m.Use(sessions.Sessions("cadeyforum", store))
 	m.Use(acerender.Renderer(&acerender.Options{
-		AceOptions: &ace.Options{BaseDir: "views"},
+		AceOptions: &ace.Options{
+			BaseDir: "views",
+			FuncMap: template.FuncMap{
+				"equals": func(a, b interface{}) bool {
+					return a == b
+				},
+			},
+		},
 	}))
 	m.Use(moauth2.NewOAuth2Provider(discordOAuthClient))
 	m.Use(csrf.Generate(&csrf.Options{
@@ -166,7 +179,15 @@ func main() {
 	m.Use(populateInfo)
 
 	m.Get("/", func(s sessions.Session, r acerender.Render) {
-		r.HTML(200, "base:test", nil, nil)
+		r.HTML(200, "base:test", Wrapper{
+			Session: s,
+			Data:    nil,
+		}, nil)
+	})
+
+	m.Get("/logout", func(s sessions.Session, w http.ResponseWriter, r *http.Request) {
+		s.Clear()
+		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
 	m.RunOnAddr(":" + *port)
