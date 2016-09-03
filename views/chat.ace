@@ -39,6 +39,8 @@
           {{ end }}
         td
           {{ if notequals $member.GetGame "" }}
-            | Playing {{ $member.GetGame }}
+            small
+              | Playing 
+            | {{ $member.GetGame }}
           {{ end }}
     {{ end }}
