@@ -32,3 +32,5 @@ db14e161995a5177acef654cb0dd785e8ee8bc22	gopkg.in/bsm/ratelimit.v1
 5183f8dcde9737db7583dbfa9881800dba26e3fa	gopkg.in/redis.v3/internal/consistenthash
 5183f8dcde9737db7583dbfa9881800dba26e3fa	gopkg.in/redis.v3/internal/hashtag
 5183f8dcde9737db7583dbfa9881800dba26e3fa	gopkg.in/redis.v3/internal/pool
+80f8150043c80fb52dee6bc863a709cdac7ec8f8	github.com/lib/pq
+80f8150043c80fb52dee6bc863a709cdac7ec8f8	github.com/lib/pq/oid
