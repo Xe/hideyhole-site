@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Xe/hideyhole-site/discordwidget"
 	"github.com/Xe/hideyhole-site/oauth2/discord"
 	"github.com/facebookgo/flagconfig"
 	"github.com/facebookgo/flagenv"
@@ -171,6 +172,9 @@ func main() {
 				"equals": func(a, b interface{}) bool {
 					return a == b
 				},
+				"notequals": func(a, b interface{}) bool {
+					return a != b
+				},
 			},
 		},
 	}))
@@ -188,6 +192,20 @@ func main() {
 		r.HTML(200, "base:test", Wrapper{
 			Session: s,
 			Data:    nil,
+		}, nil)
+	})
+
+	m.Get("/chat", func(s sessions.Session, r acerender.Render, req *http.Request, w http.ResponseWriter) {
+		guild, err := discordwidget.GetGuild(*guildID)
+		if err != nil {
+			log.Printf("%s: %v", req.RemoteAddr, err)
+			http.Error(w, "Couldn't get guild information", 500)
+			return
+		}
+
+		r.HTML(200, "base:chat", Wrapper{
+			Session: s,
+			Data:    guild,
 		}, nil)
 	})
 

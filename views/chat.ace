@@ -1,0 +1,44 @@
+= content title
+  title Chat | Cadey's Sub-Aquatic Hidey-Hole
+
+= content body
+  {{ $guild := .Data }}
+
+  h1 Chat
+
+  p
+    | Welcome to Cadey's Sub-Aquatic Hidey-Hole and its various chatrooms. To get invited, click 
+    a href="{{ $guild.InviteURL }}" target="_blank" here
+    | .
+
+  p
+    | We ask you follow the following rules:
+
+    ul
+      li
+        | Don't yell in the voice chat.
+      li
+        | Keep mature images or content in 
+        code #hideyhole
+        | .
+      li
+        | Don't make us have to come up with more rules.
+
+  h2 Online Members
+
+  table
+    {{ range $index, $member := $guild.Members }}
+      tr
+        td
+          img src="{{ $member.AvatarURL }}" width=64 height=64
+        td
+          {{ if notequals $member.Nick "" }}
+            | {{ $member.Nick }} ({{ $member.Username }})
+          {{ else }}
+            | {{ $member.Username }}
+          {{ end }}
+        td
+          {{ if notequals $member.GetGame "" }}
+            | Playing {{ $member.GetGame }}
+          {{ end }}
+    {{ end }}
