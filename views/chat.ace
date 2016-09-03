@@ -33,7 +33,10 @@
           img src="{{ $member.AvatarURL }}" width=64 height=64
         td
           {{ if notequals $member.Nick "" }}
-            | {{ $member.Nick }} ({{ $member.Username }})
+            | {{ $member.Nick }}
+            br
+            small
+              | ({{ $member.Username }})
           {{ else }}
             | {{ $member.Username }}
           {{ end }}
