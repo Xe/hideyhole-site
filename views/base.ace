@@ -16,12 +16,12 @@ html lang=en
           | [ 
           a href="/login" style="text-decoration: underline;" Login
           |  | 
-          a href="https://discord.gg/xqz2Eb8" style="text-decoration: underline;" target="_blank" Chat
+          a href="/chat" style="text-decoration: underline;" Chat
           |  ]
       {{ else }}
         p
           | [ 
-          a href="/profile/@me" style="text-decoration: underline;" {{ .Session.Get "username" }}
+          a href="/profile/me" style="text-decoration: underline;" {{ .Session.Get "username" }}
             |    
             img src="//cdn.discordapp.com/avatars/{{ .Session.Get "uid" }}/{{ .Session.Get "avatarhash" }}.jpg" width=16 height=16 style="vertical-align: text-top;"
           |  | 

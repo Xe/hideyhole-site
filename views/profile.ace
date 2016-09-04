@@ -1,0 +1,18 @@
+= content title
+  title
+    | {{ .Data.User.Username }} | Cadey's Sub-Aquatic Hidey-Hole
+
+= content body
+  span id="thumb1"
+    img src="//cdn.discordapp.com/avatars/{{ .Data.User.ID }}/{{ .Data.User.Avatar }}.jpg" alt="avatar for {{ .Data.User.Username }}" class="thumb" width="128" height="128"
+
+    div class="message"
+      span class="postername"
+        h1
+          | {{ .Data.User.Username }}
+
+      p
+        | ID: {{ .Data.User.Username }}
+        br
+        | Discriminator: {{ .Data.User.Discriminator }}
+

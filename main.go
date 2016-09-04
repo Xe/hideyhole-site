@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Xe/hideyhole-site/discordwidget"
 	"github.com/Xe/hideyhole-site/oauth2/discord"
 	"github.com/facebookgo/flagconfig"
 	"github.com/facebookgo/flagenv"
@@ -39,7 +38,6 @@ var (
 	salt          = flag.String("salt", "", "salt for any passwords or crypto stuff")
 
 	discordOAuthClient *oauth2.Config
-	redisClient        *redis.Client
 )
 
 // DiscordUser is a user from discord/users/@me.
@@ -72,7 +70,11 @@ type Wrapper struct {
 	Session sessions.Session
 }
 
-func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
+type Site struct {
+	redisClient *redis.Client
+}
+
+func (si *Site) getOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	req, err := http.NewRequest("GET", "https://discordapp.com/api/users/@me", nil)
 	if err != nil {
 		return nil, err
@@ -88,7 +90,7 @@ func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return nil, errors.New("getDiscordUser: " + resp.Status)
+		return nil, errors.New("getOwnDiscordUser: " + resp.Status)
 	}
 
 	dUser := &DiscordUser{}
@@ -98,22 +100,15 @@ func getDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 		return nil, err
 	}
 
-	recorded, err := redisClient.Exists("discord:user:" + dUser.ID).Result()
+	err = dUser.Save(si.redisClient)
 	if err != nil {
 		return nil, err
-	}
-
-	if !recorded {
-		err := dUser.Save(redisClient)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return dUser, nil
 }
 
-func populateInfo(s sessions.Session, t moauth2.Tokens) {
+func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) {
 	otoken := s.Get("oauth2_token")
 	if otoken == nil {
 		return
@@ -122,7 +117,7 @@ func populateInfo(s sessions.Session, t moauth2.Tokens) {
 
 	uid := s.Get("uid")
 	if uid == nil {
-		dUser, err := getDiscordUser(t)
+		dUser, err := si.getOwnDiscordUser(t)
 		if err != nil {
 			log.Printf("%v", err.Error())
 			return
@@ -149,13 +144,15 @@ func main() {
 		RedirectURL:  "http://greedo.xeserv.us:3093" + moauth2.PathCallback,
 	}
 
-	redisClient = redis.NewClient(&redis.Options{
-		Addr:     *redisHost,
-		Password: *redisPassword,
-		DB:       0,
-	})
+	si := &Site{
+		redisClient: redis.NewClient(&redis.Options{
+			Addr:     *redisHost,
+			Password: *redisPassword,
+			DB:       0,
+		}),
+	}
 
-	_, err := redisClient.Ping().Result()
+	_, err := si.redisClient.Ping().Result()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -178,6 +175,7 @@ func main() {
 			},
 		},
 	}))
+
 	m.Use(moauth2.NewOAuth2Provider(discordOAuthClient))
 	m.Use(csrf.Generate(&csrf.Options{
 		Secret:     *cookieKey,
@@ -186,33 +184,13 @@ func main() {
 			http.Error(w, "Bad request", http.StatusBadRequest)
 		},
 	}))
-	m.Use(populateInfo)
+	m.Use(si.populateInfo)
 
-	m.Get("/", func(s sessions.Session, r acerender.Render) {
-		r.HTML(200, "base:test", Wrapper{
-			Session: s,
-			Data:    nil,
-		}, nil)
-	})
+	m.Get("/", si.getIndex)
+	m.Get("/logout", si.logout)
 
-	m.Get("/chat", func(s sessions.Session, r acerender.Render, req *http.Request, w http.ResponseWriter) {
-		guild, err := discordwidget.GetGuild(*guildID)
-		if err != nil {
-			log.Printf("%s: %v", req.RemoteAddr, err)
-			http.Error(w, "Couldn't get guild information", 500)
-			return
-		}
-
-		r.HTML(200, "base:chat", Wrapper{
-			Session: s,
-			Data:    guild,
-		}, nil)
-	})
-
-	m.Get("/logout", func(s sessions.Session, w http.ResponseWriter, r *http.Request) {
-		s.Clear()
-		http.Redirect(w, r, "/", http.StatusFound)
-	})
+	m.Get("/chat", moauth2.LoginRequired, si.getChat)
+	m.Get("/profile/me", moauth2.LoginRequired, si.getMyProfile)
 
 	m.RunOnAddr(":" + *port)
 }
