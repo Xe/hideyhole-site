@@ -9,7 +9,8 @@
       center
         h3 Join us today!
 
-    div width="128" style="display:inline;"
-      {{ range .Data.Members }}
-        img src="//cdn.discordapp.com/avatars/{{ .ID }}/{{ .Avatar }}.jpg" width="64" height="64"
-      {{ end }}
+    div
+      center
+        {{ range .Data.Members }}
+          img src="//cdn.discordapp.com/avatars/{{ .ID }}/{{ .Avatar }}.jpg" width="64" height="64"
+        {{ end }}
