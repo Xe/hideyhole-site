@@ -1,0 +1,15 @@
+= content body
+  div
+    div
+      h1 Welcome
+
+      p
+        | Knausgaard occupy roof party, fanny pack food truck church-key vegan brooklyn sustainable small batch meh. Drinking vinegar post-ironic offal, gochujang craft beer disrupt mlkshk migas typewriter roof party.
+
+      center
+        h3 Join us today!
+
+    div width="128" style="display:inline;"
+      {{ range .Data.Members }}
+        img src="//cdn.discordapp.com/avatars/{{ .ID }}/{{ .Avatar }}.jpg" width="64" height="64"
+      {{ end }}

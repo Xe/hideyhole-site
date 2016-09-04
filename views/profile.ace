@@ -12,7 +12,7 @@
           | {{ .Data.User.Username }}
 
       p
-        | ID: {{ .Data.User.Username }}
+        | ID: {{ .Data.User.ID }}
         br
         | Discriminator: {{ .Data.User.Discriminator }}
 

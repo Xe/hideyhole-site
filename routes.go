@@ -22,8 +22,15 @@ func (si *Site) renderTemplate(code int, templateName string, data interface{}, 
 	}, nil)
 }
 
-func (si *Site) getIndex(s sessions.Session, r acerender.Render) {
-	si.renderTemplate(http.StatusOK, "test", nil, s, r)
+func (si *Site) getIndex(w http.ResponseWriter, req *http.Request, s sessions.Session, r acerender.Render) {
+	guild, err := discordwidget.GetGuild(*guildID)
+
+	if err != nil {
+		si.doError(w, req, http.StatusInternalServerError, "Couldn't get guild information")
+		return
+	}
+
+	si.renderTemplate(http.StatusOK, "index", guild, s, r)
 }
 
 func (si *Site) getChat(w http.ResponseWriter, req *http.Request, s sessions.Session, r acerender.Render) {
