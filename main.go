@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/Xe/hideyhole-site/oauth2/discord"
 	"github.com/facebookgo/flagconfig"
@@ -36,6 +37,7 @@ var (
 	guildID       = flag.String("guild-id", "", "guild ID for allowing membership")
 	cookieKey     = flag.String("cookie-key", "", "random cookie key")
 	salt          = flag.String("salt", "", "salt for any passwords or crypto stuff")
+	debug         = flag.Bool("debug", false, "add /debug routes? pprof, etc.")
 
 	discordOAuthClient *oauth2.Config
 )
@@ -188,9 +190,27 @@ func main() {
 
 	m.Get("/", si.getIndex)
 	m.Get("/logout", si.logout)
+	m.Get("/chat", si.getChat)
+	m.Get("/health", si.getHealth)
 
-	m.Get("/chat", moauth2.LoginRequired, si.getChat)
 	m.Get("/profile/me", moauth2.LoginRequired, si.getMyProfile)
+
+	if *debug {
+		log.Printf("Adding /debug routes")
+		if martini.Env == martini.Prod {
+			log.Printf("The pprof routes are enabled in production!!! Please act with care.")
+		}
+
+		m.Get("/debug/pprof", pprof.Index)
+		m.Get("/debug/pprof/cmdline", pprof.Cmdline)
+		m.Get("/debug/pprof/profile", pprof.Profile)
+		m.Get("/debug/pprof/symbol", pprof.Symbol)
+		m.Post("/debug/pprof/symbol", pprof.Symbol)
+		m.Get("/debug/pprof/block", pprof.Handler("block").ServeHTTP)
+		m.Get("/debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
+		m.Get("/debug/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
+		m.Get("/debug/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+	}
 
 	m.RunOnAddr(":" + *port)
 }

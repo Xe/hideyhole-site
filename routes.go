@@ -67,3 +67,7 @@ func (si *Site) getMyProfile(w http.ResponseWriter, req *http.Request, s session
 
 	si.renderTemplate(http.StatusOK, "profile", data, s, r)
 }
+
+func (si *Site) getHealth() (int, string) {
+	return 200, "okay"
+}
