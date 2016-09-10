@@ -1,0 +1,36 @@
+= content title
+  title
+    | {{ .Data.Fic.Title }} | Cadey's Sub-Aquatic Hidey-Hole
+
+= content body
+  div class="message"
+    h2 class="filetitle"
+      | {{ .Data.Fic.Title }}
+    span class="postername"
+      h2
+        | By 
+        a href="/profiles/{{ .Data.Author.ID }}"
+          | {{ .Data.Author.Username }}
+
+    p
+      | {{ .Data.FicDescription }}
+
+    {{ $fic := .Data.Fic }}
+    {{ $clen := len .Data.Chapters }}
+    {{ if ne $clen 0 }}
+      span class="postertrip"
+        h2
+          | Chapters
+
+      table class="postform"
+        tbody
+          {{ range .Data.Chapters }}
+            tr
+              td class="postblock"
+                a href="/fics/{{ slug $fic.Name }}/{{ $fic.ID }}/{{ slug .Name }}/{{ .ID }}"
+                  | {{ .Name }}
+          {{ end }}
+    {{ else }}
+      p
+        | No chapters found.
+    {{ end }}
