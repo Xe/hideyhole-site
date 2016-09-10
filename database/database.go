@@ -195,6 +195,31 @@ func (d *Database) getFic(ctx context.Context, tx *datastore.Transaction, id str
 	return result, resultKey, nil
 }
 
+func (d *Database) GetFicAndChapters(ficID string) (*Fic, []Chapter, error) {
+	tx, err := d.ds.NewTransaction(d.ctx, datastore.MaxAttempts(1))
+	if err != nil {
+		return nil, nil, err
+	}
+	defer tx.Rollback()
+
+	fic, _, err := d.getFic(d.ctx, tx, ficID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	q := datastore.NewQuery("Chapter").
+		Filter("FicID =", ficID).
+		Transaction(tx)
+
+	var chapters []Chapter
+	_, err = d.ds.GetAll(d.ctx, q, &chapters)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return fic, chapters, nil
+}
+
 func (d *Database) putFic(ctx context.Context, tx *datastore.Transaction, fic *Fic) (*datastore.PendingKey, error) {
 	_, key, err := d.getFic(ctx, tx, fic.ID)
 	if err != nil && err != ErrNoFicFound {
