@@ -167,7 +167,7 @@ func main() {
 	m.Get("/health", si.getHealth)
 
 	m.Get("/profile/me", moauth2.LoginRequired, si.getMyProfile)
-	m.Get("/profile/:id", moauth2.LoginRequired, si.getUserByID)
+	m.Get("/profile/:slug/:id", moauth2.LoginRequired, si.getUserByID)
 
 	if *debug {
 		log.Printf("Adding /debug routes")
