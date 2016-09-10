@@ -31,7 +31,13 @@ func initDB() (*Database, error) {
 	return db, err
 }
 
-func (d *Database) GetUser(ctx context.Context, id string) (*DiscordUser, *datastore.Key, error) {
+func (d *Database) GetUser(ctx context.Context, id string) (*DiscordUser, error) {
+	dUser, _, err := d.getUser(ctx, id)
+
+	return dUser, err
+}
+
+func (d *Database) getUser(ctx context.Context, id string) (*DiscordUser, *datastore.Key, error) {
 	result := &DiscordUser{}
 	var resultKey *datastore.Key
 
@@ -59,8 +65,14 @@ func (d *Database) GetUser(ctx context.Context, id string) (*DiscordUser, *datas
 	return result, resultKey, nil
 }
 
-func (d *Database) PutUser(ctx context.Context, dUser *DiscordUser) (*datastore.Key, error) {
-	_, key, err := d.GetUser(ctx, dUser.ID)
+func (d *Database) PutUser(ctx context.Context, dUser *DiscordUser) error {
+	_, err := d.putUser(ctx, dUser)
+
+	return err
+}
+
+func (d *Database) putUser(ctx context.Context, dUser *DiscordUser) (*datastore.Key, error) {
+	_, key, err := d.getUser(ctx, dUser.ID)
 	if err != nil && err != ErrNoUserFound {
 		return nil, err
 	}

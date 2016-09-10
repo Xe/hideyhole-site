@@ -103,7 +103,7 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) {
 		s.Set("username", dUser.Username)
 		s.Set("avatarhash", dUser.Avatar)
 
-		_, err = si.db.PutUser(context.Background(), dUser)
+		err = si.db.PutUser(context.Background(), dUser)
 		if err != nil {
 			log.Println(err)
 		}

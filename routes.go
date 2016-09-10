@@ -72,7 +72,7 @@ func (si *Site) getHealth() (int, string) {
 }
 
 func (si *Site) getUserByID(w http.ResponseWriter, req *http.Request, s sessions.Session, r acerender.Render, params martini.Params) {
-	user, _, err := si.db.GetUser(req.Context(), params["id"])
+	user, err := si.db.GetUser(req.Context(), params["id"])
 
 	if err != nil {
 		switch err {
