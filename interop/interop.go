@@ -1,4 +1,4 @@
-package main
+package interop
 
 import (
 	"encoding/json"
@@ -24,7 +24,7 @@ type DiscordUserGuild struct {
 	Name        string `json:"name"`
 }
 
-func getOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
+func GetOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	req, err := http.NewRequest("GET", "https://discordapp.com/api/users/@me", nil)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func getOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	return dUser, nil
 }
 
-func getOwnDiscordGuilds(t moauth2.Tokens) ([]DiscordUserGuild, error) {
+func GetOwnDiscordGuilds(t moauth2.Tokens) ([]DiscordUserGuild, error) {
 	req, err := http.NewRequest("GET", "https://discordapp.com/api/users/@me/guilds", nil)
 	if err != nil {
 		return nil, err

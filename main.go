@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"net/http/pprof"
 
+	"cloud.google.com/go/preview/logging"
+	"github.com/Xe/hideyhole-site/database"
+	"github.com/Xe/hideyhole-site/interop"
 	"github.com/Xe/hideyhole-site/oauth2/discord"
 	"github.com/Xe/martini-oauth2"
 	"github.com/facebookgo/flagconfig"
@@ -22,20 +25,28 @@ import (
 )
 
 var (
-	clientID        = flag.String("discord-client-id", "", "discord oauth client id")
-	clientSecret    = flag.String("discord-client-secret", "", "discord oauth client secret")
-	googleProjectID = flag.String("google-project-id", "", "google project ID")
-	port            = flag.String("port", "3093", "TCP port to listen on for HTTP requests")
-	guildID         = flag.String("guild-id", "", "guild ID for allowing membership")
-	cookieKey       = flag.String("cookie-key", "", "random cookie key")
-	salt            = flag.String("salt", "", "salt for any passwords or crypto stuff")
-	debug           = flag.Bool("debug", false, "add /debug routes? pprof, etc.")
+	clientID                 = flag.String("discord-client-id", "", "discord oauth client id")
+	clientSecret             = flag.String("discord-client-secret", "", "discord oauth client secret")
+	googleProjectID          = flag.String("google-project-id", "", "google project ID")
+	googleDatastoreNamespace = flag.String("google-datastore-namespace", "hideyhole-other", "google datastore namespace")
+	port                     = flag.String("port", "3093", "TCP port to listen on for HTTP requests")
+	guildID                  = flag.String("guild-id", "", "guild ID for allowing membership")
+	cookieKey                = flag.String("cookie-key", "", "random cookie key")
+	salt                     = flag.String("salt", "", "salt for any passwords or crypto stuff")
+	debug                    = flag.Bool("debug", false, "add /debug routes? pprof, etc.")
 
 	discordOAuthClient *oauth2.Config
 )
 
 type Site struct {
-	db *Database
+	db        *database.Database
+	logClient *logging.Client
+	log       *log.Logger
+}
+
+//hack
+func init() {
+	http.DefaultServeMux = http.NewServeMux()
 }
 
 func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) error {
@@ -46,7 +57,7 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) error {
 
 	uid := s.Get("uid")
 	if uid == nil {
-		dUser, err := getOwnDiscordUser(t)
+		dUser, err := interop.GetOwnDiscordUser(t)
 		if err != nil {
 			return err
 		}
@@ -55,12 +66,12 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) error {
 		s.Set("username", dUser.Username)
 		s.Set("avatarhash", dUser.Avatar)
 
-		err = si.db.PutUser(context.Background(), dUser)
+		err = si.db.PutUser(dUser)
 		if err != nil {
 			return err
 		}
 
-		guilds, err := getOwnDiscordGuilds(t)
+		guilds, err := interop.GetOwnDiscordGuilds(t)
 		if err != nil {
 			return err
 		}
@@ -96,19 +107,28 @@ func main() {
 		RedirectURL:  "http://greedo.xeserv.us:3093" + moauth2.PathCallback,
 	}
 
-	si := &Site{}
-
-	db, err := initDB()
+	logClient, err := logging.NewClient(context.Background(), *googleProjectID)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	si.db = db
+	logger := logClient.Logger(*googleDatastoreNamespace + "_" + martini.Env).StandardLogger(logging.Default)
+
+	db, err := database.Init(*googleDatastoreNamespace, *googleProjectID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	si := &Site{
+		db:        db,
+		logClient: logClient,
+		log:       logger,
+	}
 
 	m := martini.Classic()
 	store := sessions.NewCookieStore([]byte(*cookieKey))
 
-	m.Use(sessions.Sessions("cadeyforum", store))
+	m.Use(sessions.Sessions("backplane.cadeyforum", store))
 	m.Use(acerender.Renderer(&acerender.Options{
 		AceOptions: &ace.Options{
 			BaseDir:       "views",

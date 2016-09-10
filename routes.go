@@ -1,10 +1,11 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
+	"github.com/Xe/hideyhole-site/database"
 	"github.com/Xe/hideyhole-site/discordwidget"
+	"github.com/Xe/hideyhole-site/interop"
 	"github.com/Xe/martini-oauth2"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/sessions"
@@ -17,7 +18,7 @@ type Wrapper struct {
 }
 
 func (si *Site) doError(w http.ResponseWriter, req *http.Request, code int, why string) {
-	log.Printf("%s %s %s: %v", req.Method, req.RequestURI, req.RemoteAddr, why)
+	si.log.Printf("%s %s %s %s: %v", req.RemoteAddr, req.Method, req.RequestURI, req.RemoteAddr, why)
 	http.Error(w, why, code)
 }
 
@@ -51,14 +52,14 @@ func (si *Site) getChat(w http.ResponseWriter, req *http.Request, s sessions.Ses
 }
 
 func (si *Site) getMyProfile(w http.ResponseWriter, req *http.Request, s sessions.Session, t moauth2.Tokens, r acerender.Render) {
-	dUser, err := getOwnDiscordUser(t)
+	dUser, err := interop.GetOwnDiscordUser(t)
 	if err != nil {
 		si.doError(w, req, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	data := struct {
-		User *DiscordUser
+		User *interop.DiscordUser
 	}{
 		User: dUser,
 	}
@@ -71,11 +72,11 @@ func (si *Site) getHealth() (int, string) {
 }
 
 func (si *Site) getUserByID(w http.ResponseWriter, req *http.Request, s sessions.Session, r acerender.Render, params martini.Params) {
-	user, err := si.db.GetUser(req.Context(), params["id"])
+	user, err := si.db.GetUser(params["id"])
 
 	if err != nil {
 		switch err {
-		case ErrNoUserFound:
+		case database.ErrNoUserFound:
 			si.doError(w, req, http.StatusNotFound, "No such user exists")
 			return
 		default:
@@ -85,7 +86,7 @@ func (si *Site) getUserByID(w http.ResponseWriter, req *http.Request, s sessions
 	}
 
 	data := struct {
-		User *DiscordUser
+		User *interop.DiscordUser
 	}{
 		User: user,
 	}
