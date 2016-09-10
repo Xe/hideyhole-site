@@ -51,16 +51,16 @@ func (si *Site) getChat(w http.ResponseWriter, req *http.Request, s sessions.Ses
 }
 
 func (si *Site) getMyProfile(w http.ResponseWriter, req *http.Request, s sessions.Session, t moauth2.Tokens, r acerender.Render) {
-	dUser, err := si.getOwnDiscordUser(t)
+	dUser, err := getOwnDiscordUser(t)
 	if err != nil {
 		si.doError(w, req, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	data := struct {
-		User DiscordUser
+		User *DiscordUser
 	}{
-		User: *dUser,
+		User: dUser,
 	}
 
 	si.renderTemplate(http.StatusOK, "profile", data, s, r)
@@ -84,5 +84,11 @@ func (si *Site) getUserByID(w http.ResponseWriter, req *http.Request, s sessions
 		}
 	}
 
-	si.renderTemplate(http.StatusOK, "profile", struct{ User *DiscordUser }{user}, s, r)
+	data := struct {
+		User *DiscordUser
+	}{
+		User: user,
+	}
+
+	si.renderTemplate(http.StatusOK, "profile", data, s, r)
 }
