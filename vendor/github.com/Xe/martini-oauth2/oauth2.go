@@ -19,6 +19,7 @@ package moauth2
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -164,6 +165,7 @@ func handleOAuth2Callback(f *oauth2.Config, s sessions.Session, w http.ResponseW
 
 	err = then(s, tk)
 	if err != nil {
+		log.Println(err)
 		http.Redirect(w, r, PathError, codeRedirect)
 		return
 	}
