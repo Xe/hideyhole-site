@@ -81,6 +81,11 @@ import (
 	"golang.org/x/net/internal/timeseries"
 )
 
+//hack
+func init() {
+	http.DefaultServeMux = http.NewServeMux()
+}
+
 // DebugUseAfterFinish controls whether to debug uses of Trace values after finishing.
 // FOR DEBUGGING ONLY. This will slow down the program.
 var DebugUseAfterFinish = false
