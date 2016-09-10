@@ -13,14 +13,12 @@ import (
 	"github.com/facebookgo/flagconfig"
 	"github.com/facebookgo/flagenv"
 	"github.com/go-martini/martini"
-	_ "github.com/lib/pq"
 	"github.com/martini-contrib/csrf"
 	moauth2 "github.com/martini-contrib/oauth2"
 	"github.com/martini-contrib/sessions"
 	"github.com/yosssi/ace"
 	"github.com/yosssi/martini-acerender"
 	"golang.org/x/oauth2"
-	"gopkg.in/redis.v3"
 )
 
 func init() {
@@ -28,43 +26,24 @@ func init() {
 }
 
 var (
-	clientID      = flag.String("discord-client-id", "", "discord oauth client id")
-	clientSecret  = flag.String("discord-client-secret", "", "discord oauth client secret")
-	redisHost     = flag.String("redis-host", "127.0.0.1:6379", "redis server to use for memory")
-	redisPassword = flag.String("redis-password", "", "redis serer password")
-	pqURL         = flag.String("database-url", "", "database URL")
-	port          = flag.String("port", "3093", "TCP port to listen on for HTTP requests")
-	guildID       = flag.String("guild-id", "", "guild ID for allowing membership")
-	cookieKey     = flag.String("cookie-key", "", "random cookie key")
-	salt          = flag.String("salt", "", "salt for any passwords or crypto stuff")
-	debug         = flag.Bool("debug", false, "add /debug routes? pprof, etc.")
+	clientID        = flag.String("discord-client-id", "", "discord oauth client id")
+	clientSecret    = flag.String("discord-client-secret", "", "discord oauth client secret")
+	googleProjectID = flag.String("google-project-id", "", "google project ID")
+	port            = flag.String("port", "3093", "TCP port to listen on for HTTP requests")
+	guildID         = flag.String("guild-id", "", "guild ID for allowing membership")
+	cookieKey       = flag.String("cookie-key", "", "random cookie key")
+	salt            = flag.String("salt", "", "salt for any passwords or crypto stuff")
+	debug           = flag.Bool("debug", false, "add /debug routes? pprof, etc.")
 
 	discordOAuthClient *oauth2.Config
 )
 
 // DiscordUser is a user from discord/users/@me.
 type DiscordUser struct {
-	Username      string `json:"username"`
-	Verified      bool   `json:"verified"`
-	MfaEnabled    bool   `json:"mfa_enabled"`
-	ID            string `json:"id" xorm:"pk"`
-	Avatar        string `json:"avatar"`
-	Discriminator string `json:"discriminator"`
-	Email         string `json:"email"`
-}
-
-func (d *DiscordUser) Save(r *redis.Client) error {
-	data, err := json.Marshal(d)
-	if err != nil {
-		return err
-	}
-
-	_, err = r.Set("discord:user:"+d.ID, string(data), 0).Result()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	Username string `json:"username"`
+	ID       string `json:"id"`
+	Avatar   string `json:"avatar" datastore:",noindex"`
+	Email    string `json:"email"`
 }
 
 type Wrapper struct {
@@ -72,9 +51,7 @@ type Wrapper struct {
 	Session sessions.Session
 }
 
-type Site struct {
-	redisClient *redis.Client
-}
+type Site struct{}
 
 func (si *Site) getOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	req, err := http.NewRequest("GET", "https://discordapp.com/api/users/@me", nil)
@@ -102,11 +79,6 @@ func (si *Site) getOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 		return nil, err
 	}
 
-	err = dUser.Save(si.redisClient)
-	if err != nil {
-		return nil, err
-	}
-
 	return dUser, nil
 }
 
@@ -114,7 +86,6 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) {
 	otoken := s.Get("oauth2_token")
 	if otoken == nil {
 		return
-
 	}
 
 	uid := s.Get("uid")
@@ -135,8 +106,8 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) {
 
 func main() {
 	flagenv.Parse()
-	flag.Parse()
 	flagconfig.Parse()
+	flag.Parse()
 
 	discordOAuthClient = &oauth2.Config{
 		ClientID:     *clientID,
@@ -146,18 +117,7 @@ func main() {
 		RedirectURL:  "http://greedo.xeserv.us:3093" + moauth2.PathCallback,
 	}
 
-	si := &Site{
-		redisClient: redis.NewClient(&redis.Options{
-			Addr:     *redisHost,
-			Password: *redisPassword,
-			DB:       0,
-		}),
-	}
-
-	_, err := si.redisClient.Ping().Result()
-	if err != nil {
-		log.Fatal(err)
-	}
+	si := &Site{}
 
 	m := martini.Classic()
 	store := sessions.NewCookieStore([]byte(*cookieKey))
