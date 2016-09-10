@@ -60,8 +60,7 @@ func (si *Site) getOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 
 	req.Header.Set("Authorization", "Bearer "+t.Access())
 
-	c := &http.Client{}
-	resp, err := c.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +100,25 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) error {
 		err = si.db.PutUser(context.Background(), dUser)
 		if err != nil {
 			return err
+		}
+
+		guilds, err := getOwnDiscordGuilds(t)
+		if err != nil {
+			return err
+		}
+
+		ok := false
+
+		for _, guild := range guilds {
+			if guild.ID == *guildID {
+				ok = true
+
+				break
+			}
+		}
+
+		if !ok {
+			return errors.New("Not in target guild")
 		}
 	}
 
