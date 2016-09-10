@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"flag"
 	"html/template"
@@ -35,49 +34,8 @@ var (
 	discordOAuthClient *oauth2.Config
 )
 
-// DiscordUser is a user from discord/users/@me.
-type DiscordUser struct {
-	Username string `json:"username"`
-	ID       string `json:"id"`
-	Avatar   string `json:"avatar" datastore:",noindex"`
-	Email    string `json:"email"`
-}
-
-type Wrapper struct {
-	Data    interface{}
-	Session sessions.Session
-}
-
 type Site struct {
 	db *Database
-}
-
-func (si *Site) getOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
-	req, err := http.NewRequest("GET", "https://discordapp.com/api/users/@me", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+t.Access())
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return nil, errors.New("getOwnDiscordUser: " + resp.Status)
-	}
-
-	dUser := &DiscordUser{}
-
-	err = json.NewDecoder(resp.Body).Decode(dUser)
-	if err != nil {
-		return nil, err
-	}
-
-	return dUser, nil
 }
 
 func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) error {
@@ -88,7 +46,7 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) error {
 
 	uid := s.Get("uid")
 	if uid == nil {
-		dUser, err := si.getOwnDiscordUser(t)
+		dUser, err := getOwnDiscordUser(t)
 		if err != nil {
 			return err
 		}

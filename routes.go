@@ -11,6 +11,11 @@ import (
 	acerender "github.com/yosssi/martini-acerender"
 )
 
+type Wrapper struct {
+	Data    interface{}
+	Session sessions.Session
+}
+
 func (si *Site) doError(w http.ResponseWriter, req *http.Request, code int, why string) {
 	log.Printf("%s %s %s: %v", req.Method, req.RequestURI, req.RemoteAddr, why)
 	http.Error(w, why, code)
