@@ -60,11 +60,14 @@ func (d *Database) GetUser(ctx context.Context, id string) (*DiscordUser, *datas
 }
 
 func (d *Database) PutUser(ctx context.Context, dUser *DiscordUser) (*datastore.Key, error) {
-	_, _, err := d.GetUser(ctx, dUser.ID)
-	if err != ErrNoUserFound {
+	_, key, err := d.GetUser(ctx, dUser.ID)
+	if err != nil && err != ErrNoUserFound {
 		return nil, err
 	}
 
-	k := datastore.NewIncompleteKey(ctx, "DiscordUser", nil)
-	return d.ds.Put(ctx, k, dUser)
+	if key == nil {
+		key = datastore.NewIncompleteKey(ctx, "DiscordUser", nil)
+	}
+
+	return d.ds.Put(ctx, key, dUser)
 }
