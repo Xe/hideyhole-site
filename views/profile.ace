@@ -7,12 +7,10 @@
     img src="//cdn.discordapp.com/avatars/{{ .Data.User.ID }}/{{ .Data.User.Avatar }}.jpg" alt="avatar for {{ .Data.User.Username }}" class="thumb" width="128" height="128"
 
     div class="message"
+      h2 User Profile
       span class="postername"
-        h1
+        h2
           | {{ .Data.User.Username }}
 
       p
         | ID: {{ .Data.User.ID }}
-        br
-        | Discriminator: {{ .Data.User.Discriminator }}
-

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -51,7 +52,9 @@ type Wrapper struct {
 	Session sessions.Session
 }
 
-type Site struct{}
+type Site struct {
+	db *Database
+}
 
 func (si *Site) getOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	req, err := http.NewRequest("GET", "https://discordapp.com/api/users/@me", nil)
@@ -99,6 +102,11 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) {
 		s.Set("uid", dUser.ID)
 		s.Set("username", dUser.Username)
 		s.Set("avatarhash", dUser.Avatar)
+
+		_, err = si.db.PutUser(context.Background(), dUser)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	return
@@ -106,8 +114,8 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) {
 
 func main() {
 	flagenv.Parse()
-	flagconfig.Parse()
 	flag.Parse()
+	flagconfig.Parse()
 
 	discordOAuthClient = &oauth2.Config{
 		ClientID:     *clientID,
@@ -118,6 +126,13 @@ func main() {
 	}
 
 	si := &Site{}
+
+	db, err := initDB()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	si.db = db
 
 	m := martini.Classic()
 	store := sessions.NewCookieStore([]byte(*cookieKey))
@@ -154,6 +169,7 @@ func main() {
 	m.Get("/health", si.getHealth)
 
 	m.Get("/profile/me", moauth2.LoginRequired, si.getMyProfile)
+	m.Get("/profile/:id", moauth2.LoginRequired, si.getUserByID)
 
 	if *debug {
 		log.Printf("Adding /debug routes")

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Xe/hideyhole-site/discordwidget"
+	"github.com/go-martini/martini"
 	"github.com/martini-contrib/oauth2"
 	"github.com/martini-contrib/sessions"
 	acerender "github.com/yosssi/martini-acerender"
@@ -63,11 +64,26 @@ func (si *Site) getMyProfile(w http.ResponseWriter, req *http.Request, s session
 		User: *dUser,
 	}
 
-	log.Printf("%#v", data)
-
 	si.renderTemplate(http.StatusOK, "profile", data, s, r)
 }
 
 func (si *Site) getHealth() (int, string) {
 	return 200, "okay"
+}
+
+func (si *Site) getUserByID(w http.ResponseWriter, req *http.Request, s sessions.Session, r acerender.Render, params martini.Params) {
+	user, _, err := si.db.GetUser(req.Context(), params["id"])
+
+	if err != nil {
+		switch err {
+		case ErrNoUserFound:
+			si.doError(w, req, http.StatusNotFound, "No such user exists")
+			return
+		default:
+			si.doError(w, req, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
+	si.renderTemplate(http.StatusOK, "profile", struct{ User *DiscordUser }{user}, s, r)
 }
