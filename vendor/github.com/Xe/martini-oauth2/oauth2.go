@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oauth2 contains Martini handlers to provide
+// Package moauth2 contains Martini handlers to provide
 // user login via an OAuth 2.0 backend.
-package oauth2
+package moauth2
 
 import (
 	"encoding/json"
@@ -26,7 +26,6 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/sessions"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 const (
@@ -84,45 +83,11 @@ func (t *token) ExpiryTime() time.Time {
 
 // String returns the string representation of the token.
 func (t *token) String() string {
-	return fmt.Sprintf("tokens: %v", t)
-}
-
-// Google returns a new Google OAuth 2.0 backend endpoint.
-func Google(conf *oauth2.Config) martini.Handler {
-	conf.Endpoint = google.Endpoint
-	return NewOAuth2Provider(conf)
-}
-
-// Github returns a new Github OAuth 2.0 backend endpoint.
-func Github(conf *oauth2.Config) martini.Handler {
-	conf.Endpoint = oauth2.Endpoint{
-		AuthURL:  "https://github.com/login/oauth/authorize",
-		TokenURL: "https://github.com/login/oauth/access_token",
-	}
-	return NewOAuth2Provider(conf)
-}
-
-// Facebook returns a new Facebook OAuth 2.0 backend endpoint.
-func Facebook(conf *oauth2.Config) martini.Handler {
-	conf.Endpoint = oauth2.Endpoint{
-		AuthURL:  "https://www.facebook.com/dialog/oauth",
-		TokenURL: "https://graph.facebook.com/oauth/access_token",
-	}
-	return NewOAuth2Provider(conf)
-}
-
-// LinkedIn returns a new LinkedIn OAuth 2.0 backend endpoint.
-func LinkedIn(conf *oauth2.Config) martini.Handler {
-	conf.Endpoint = oauth2.Endpoint{
-		AuthURL:  "https://www.linkedin.com/uas/oauth2/authorization",
-		TokenURL: "https://www.linkedin.com/uas/oauth2/accessToken",
-	}
-	return NewOAuth2Provider(conf)
+	return fmt.Sprintf("tokens: %v", t.String())
 }
 
 // NewOAuth2Provider returns a generic OAuth 2.0 backend endpoint.
-func NewOAuth2Provider(conf *oauth2.Config) martini.Handler {
-
+func NewOAuth2Provider(conf *oauth2.Config, then func(sessions.Session, Tokens) error) martini.Handler {
 	return func(s sessions.Session, c martini.Context, w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" {
 			switch r.URL.Path {
@@ -131,7 +96,7 @@ func NewOAuth2Provider(conf *oauth2.Config) martini.Handler {
 			case PathLogout:
 				logout(s, w, r)
 			case PathCallback:
-				handleOAuth2Callback(conf, s, w, r)
+				handleOAuth2Callback(conf, s, w, r, then)
 			}
 		}
 		tk := unmarshallToken(s)
@@ -177,11 +142,11 @@ func login(f *oauth2.Config, s sessions.Session, w http.ResponseWriter, r *http.
 
 func logout(s sessions.Session, w http.ResponseWriter, r *http.Request) {
 	next := extractPath(r.URL.Query().Get(keyNextPage))
-	s.Delete(keyToken)
+	s.Clear()
 	http.Redirect(w, r, next, codeRedirect)
 }
 
-func handleOAuth2Callback(f *oauth2.Config, s sessions.Session, w http.ResponseWriter, r *http.Request) {
+func handleOAuth2Callback(f *oauth2.Config, s sessions.Session, w http.ResponseWriter, r *http.Request, then func(sessions.Session, Tokens) error) {
 	next := extractPath(r.URL.Query().Get("state"))
 	code := r.URL.Query().Get("code")
 	t, err := f.Exchange(oauth2.NoContext, code)
@@ -194,6 +159,15 @@ func handleOAuth2Callback(f *oauth2.Config, s sessions.Session, w http.ResponseW
 	// Store the credentials in the session.
 	val, _ := json.Marshal(t)
 	s.Set(keyToken, val)
+
+	tk := unmarshallToken(s)
+
+	err = then(s, tk)
+	if err != nil {
+		http.Redirect(w, r, PathError, codeRedirect)
+		return
+	}
+
 	http.Redirect(w, r, next, codeRedirect)
 }
 
