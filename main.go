@@ -45,11 +45,6 @@ type Site struct {
 	log       *log.Logger
 }
 
-//hack
-func init() {
-	http.DefaultServeMux = http.NewServeMux()
-}
-
 func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) error {
 	otoken := s.Get("oauth2_token")
 	if otoken == nil {
@@ -90,6 +85,8 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) error {
 		if !ok {
 			return errors.New("Not in target guild")
 		}
+
+		si.log.Printf("user login: %s %q", dUser.ID, dUser.Username)
 	}
 
 	return nil

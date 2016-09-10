@@ -96,3 +96,5 @@ func (si *Site) getUserByID(w http.ResponseWriter, req *http.Request, s sessions
 
 	si.renderTemplate(http.StatusOK, "profile", data, s, r)
 }
+
+func (si *Site) listFics() {}
