@@ -112,7 +112,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger := logClient.Logger(*googleDatastoreNamespace + "_" + martini.Env).StandardLogger(logging.Default)
+	logger := logClient.Logger(
+		*googleDatastoreNamespace+"_"+martini.Env,
+		logging.CommonLabels(map[string]string{
+			"namespace": *googleDatastoreNamespace,
+			"env":       martini.Env,
+		}),
+	).StandardLogger(
+		logging.Default,
+	)
 
 	db, err := database.Init(*googleDatastoreNamespace, *googleProjectID)
 	if err != nil {

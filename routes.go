@@ -18,7 +18,10 @@ type Wrapper struct {
 }
 
 func (si *Site) doError(w http.ResponseWriter, req *http.Request, code int, why string) {
-	si.log.Printf("%s %s %s %s: %v", req.RemoteAddr, req.Method, req.RequestURI, req.RemoteAddr, why)
+	si.log.Printf(
+		"[%s] %s %s %d: %v",
+		req.RemoteAddr, req.Method, req.RequestURI, code, why,
+	)
 	http.Error(w, why, code)
 }
 
