@@ -14,6 +14,7 @@ import (
 	"github.com/Xe/hideyhole-site/interop"
 	"github.com/Xe/hideyhole-site/oauth2/discord"
 	"github.com/Xe/martini-oauth2"
+	"github.com/extemporalgenome/slug"
 	"github.com/facebookgo/flagconfig"
 	"github.com/facebookgo/flagenv"
 	"github.com/go-martini/martini"
@@ -146,6 +147,7 @@ func main() {
 				"notequals": func(a, b interface{}) bool {
 					return a != b
 				},
+				"slug": slug.Slug,
 			},
 		},
 	}))

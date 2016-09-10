@@ -199,3 +199,7 @@ a69f0f19d246419bb931b0ac8f4f8d3f3e6d4feb	google.golang.org/api/transport
 28707e14b1d2b2f5da81474dea2790d71e526987	google.golang.org/grpc/naming
 28707e14b1d2b2f5da81474dea2790d71e526987	google.golang.org/grpc/peer
 28707e14b1d2b2f5da81474dea2790d71e526987	google.golang.org/grpc/transport
+3107b1dd8c5258a02e5f63347dc1c30288c75af5	github.com/bwmarrin/snowflake
+0320c85e32e0015b090f08a5d1324d5ab6094f07	github.com/extemporalgenome/slug
+cf4986612c83df6c55578ba198316d1684a9a287	golang.org/x/text/transform
+cf4986612c83df6c55578ba198316d1684a9a287	golang.org/x/text/unicode/norm
