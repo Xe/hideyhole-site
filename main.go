@@ -34,6 +34,7 @@ var (
 	cookieKey                = flag.String("cookie-key", "", "random cookie key")
 	salt                     = flag.String("salt", "", "salt for any passwords or crypto stuff")
 	debug                    = flag.Bool("debug", false, "add /debug routes? pprof, etc.")
+	domain                   = flag.String("domain", "localhost:3093", "redirect URL base for OAuth")
 
 	discordOAuthClient *oauth2.Config
 )
@@ -104,7 +105,7 @@ func main() {
 		ClientSecret: *clientSecret,
 		Endpoint:     discord.Endpoint,
 		Scopes:       []string{"identify", "email", "guilds"},
-		RedirectURL:  "http://greedo.xeserv.us:3093" + moauth2.PathCallback,
+		RedirectURL:  *domain + moauth2.PathCallback,
 	}
 
 	logClient, err := logging.NewClient(context.Background(), *googleProjectID)
