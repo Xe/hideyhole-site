@@ -14,9 +14,9 @@ html lang=en
       {{ if equals $uid nil }}
         p
           | [ 
-          a href="/login" style="text-decoration: underline;" Login
-          |  | 
           a href="/chat" style="text-decoration: underline;" Chat
+          |  | 
+          a href="/login" style="text-decoration: underline;" Login
           |  ]
       {{ else }}
         p
