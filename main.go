@@ -11,20 +11,16 @@ import (
 	"net/http/pprof"
 
 	"github.com/Xe/hideyhole-site/oauth2/discord"
+	"github.com/Xe/martini-oauth2"
 	"github.com/facebookgo/flagconfig"
 	"github.com/facebookgo/flagenv"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/csrf"
-	moauth2 "github.com/martini-contrib/oauth2"
 	"github.com/martini-contrib/sessions"
 	"github.com/yosssi/ace"
 	"github.com/yosssi/martini-acerender"
 	"golang.org/x/oauth2"
 )
-
-func init() {
-	moauth2.PathLogout = "/xXxXxXxXxlogout"
-}
 
 var (
 	clientID        = flag.String("discord-client-id", "", "discord oauth client id")
@@ -85,18 +81,17 @@ func (si *Site) getOwnDiscordUser(t moauth2.Tokens) (*DiscordUser, error) {
 	return dUser, nil
 }
 
-func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) {
+func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) error {
 	otoken := s.Get("oauth2_token")
 	if otoken == nil {
-		return
+		return nil
 	}
 
 	uid := s.Get("uid")
 	if uid == nil {
 		dUser, err := si.getOwnDiscordUser(t)
 		if err != nil {
-			log.Printf("%v", err.Error())
-			return
+			return err
 		}
 
 		s.Set("uid", dUser.ID)
@@ -105,11 +100,11 @@ func (si *Site) populateInfo(s sessions.Session, t moauth2.Tokens) {
 
 		err = si.db.PutUser(context.Background(), dUser)
 		if err != nil {
-			log.Println(err)
+			return err
 		}
 	}
 
-	return
+	return nil
 }
 
 func main() {
@@ -153,7 +148,7 @@ func main() {
 		},
 	}))
 
-	m.Use(moauth2.NewOAuth2Provider(discordOAuthClient))
+	m.Use(moauth2.NewOAuth2Provider(discordOAuthClient, si.populateInfo))
 	m.Use(csrf.Generate(&csrf.Options{
 		Secret:     *cookieKey,
 		SessionKey: *guildID,
@@ -164,7 +159,6 @@ func main() {
 	m.Use(si.populateInfo)
 
 	m.Get("/", si.getIndex)
-	m.Get("/logout", si.logout)
 	m.Get("/chat", si.getChat)
 	m.Get("/health", si.getHealth)
 

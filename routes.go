@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/Xe/hideyhole-site/discordwidget"
+	"github.com/Xe/martini-oauth2"
 	"github.com/go-martini/martini"
-	"github.com/martini-contrib/oauth2"
 	"github.com/martini-contrib/sessions"
 	acerender "github.com/yosssi/martini-acerender"
 )
@@ -45,13 +45,7 @@ func (si *Site) getChat(w http.ResponseWriter, req *http.Request, s sessions.Ses
 	si.renderTemplate(http.StatusOK, "chat", guild, s, r)
 }
 
-func (si *Site) logout(s sessions.Session, w http.ResponseWriter, r *http.Request) {
-	s.Clear()
-
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
-func (si *Site) getMyProfile(w http.ResponseWriter, req *http.Request, s sessions.Session, t oauth2.Tokens, r acerender.Render) {
+func (si *Site) getMyProfile(w http.ResponseWriter, req *http.Request, s sessions.Session, t moauth2.Tokens, r acerender.Render) {
 	dUser, err := si.getOwnDiscordUser(t)
 	if err != nil {
 		si.doError(w, req, http.StatusInternalServerError, err.Error())
