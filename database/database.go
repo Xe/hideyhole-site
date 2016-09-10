@@ -43,31 +43,46 @@ func Init(namespace, projectID string) (*Database, error) {
 }
 
 func (d *Database) GetUser(id string) (*interop.DiscordUser, error) {
-	dUser, _, err := d.getUser(d.ctx, id)
+	tx, err := d.ds.NewTransaction(d.ctx, datastore.MaxAttempts(1))
+	if err != nil {
+		return nil, err
+	}
+
+	dUser, _, err := d.getUser(d.ctx, tx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
 
 	return dUser, err
 }
 
-func (d *Database) getUser(ctx context.Context, id string) (*interop.DiscordUser, *datastore.Key, error) {
-	result := &interop.DiscordUser{}
+func (d *Database) getUser(ctx context.Context, tx *datastore.Transaction, id string) (*interop.DiscordUser, *datastore.Key, error) {
+	results := []interop.DiscordUser{}
+	var result *interop.DiscordUser
 	var resultKey *datastore.Key
 
-	q := datastore.NewQuery("DiscordUser").Filter("ID =", id).Limit(1)
+	q := datastore.NewQuery("DiscordUser").
+		Filter("ID =", id).
+		Limit(1).
+		Transaction(tx)
 
-	for t := d.ds.Run(d.ctx, q); ; {
-		val := &interop.DiscordUser{}
-
-		key, err := t.Next(val)
-		if err == datastore.Done {
-			break
-		}
-		if err != nil {
+	resultKeys, err := d.ds.GetAll(ctx, q, &results)
+	if err != nil {
+		switch err {
+		case datastore.ErrNoSuchEntity:
+			return nil, nil, ErrNoUserFound
+		default:
 			return nil, nil, err
 		}
-
-		result = val
-		resultKey = key
 	}
+
+	result = &results[0]
+	resultKey = resultKeys[0]
 
 	if len(result.ID) == 0 {
 		return nil, nil, ErrNoUserFound
@@ -77,14 +92,28 @@ func (d *Database) getUser(ctx context.Context, id string) (*interop.DiscordUser
 }
 
 func (d *Database) PutUser(dUser *interop.DiscordUser) error {
-	_, err := d.putUser(d.ctx, dUser)
+	tx, err := d.ds.NewTransaction(d.ctx, datastore.MaxAttempts(1))
+	if err != nil {
+		return err
+	}
+
+	_, err = d.putUser(d.ctx, tx, dUser)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Commit()
+	if err != nil {
+		return err
+	}
 
 	return err
 }
 
-func (d *Database) putUser(ctx context.Context, dUser *interop.DiscordUser) (*datastore.Key, error) {
-	_, key, err := d.getUser(ctx, dUser.ID)
+func (d *Database) putUser(ctx context.Context, tx *datastore.Transaction, dUser *interop.DiscordUser) (*datastore.PendingKey, error) {
+	_, key, err := d.getUser(ctx, tx, dUser.ID)
 	if err != nil && err != ErrNoUserFound {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -92,5 +121,5 @@ func (d *Database) putUser(ctx context.Context, dUser *interop.DiscordUser) (*da
 		key = datastore.NewIncompleteKey(ctx, "DiscordUser", nil)
 	}
 
-	return d.ds.Put(ctx, key, dUser)
+	return tx.Put(key, dUser)
 }
