@@ -11,6 +11,10 @@
 
     div
       center
+        br
+
         {{ range .Data.Members }}
-          img src="//cdn.discordapp.com/avatars/{{ .ID }}/{{ .Avatar }}.jpg" width="64" height="64"
+          {{ if ne .Avatar "" }}
+            img src="//cdn.discordapp.com/avatars/{{ .ID }}/{{ .Avatar }}.jpg" width="64" height="64"
+          {{ end }}
         {{ end }}
