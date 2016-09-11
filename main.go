@@ -177,9 +177,10 @@ func main() {
 		r.Get("/:slug/:id", si.getUserByID)
 	}, moauth2.LoginRequired)
 
-	m.Group("/fic", func(r martini.Router) {
+	m.Group("/fics", func(r martini.Router) {
 		r.Get("/", si.listFics)
 		r.Get("/index/:page", si.listFics)
+		r.Get("/create", si.getCreateFic)
 	}, moauth2.LoginRequired)
 
 	if *debug {

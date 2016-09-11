@@ -10,25 +10,32 @@
     a href="/fics/create"
       | Create
 
-    table class="postform"
-      tbody
-      {{ range .Data.Fics }}
-        tr
-          td class="postblock"
-            a href="/fics/{{ slug .Name }}/{{ .ID }}"
-              | {{ .Name }}
-      {{ end }}
+    {{ $flen := len .Data.Fics }}
+      {{ if eq $flen 0 }}
+      table class="postform"
+        tbody
+          {{ range .Data.Fics }}
+            tr
+              td class="postblock"
+                a href="/fics/{{ slug .Name }}/{{ .ID }}"
+                  | {{ .Name }}
+          {{ end }}
+    {{ else }}
+      p
+        | No fics found matching requested criteria.
+    {{ end }}
 
-    p style="align: center;"
-      {{ if ne .Data.Pagenum 1 }}
-        a href="/fics/index/{{ dec .Data.Pagenum }}"
-          | <
-      {{ end }}
+    center
+      p style="align: center;"
+        {{ if ne .Data.Pagenum 1 }}
+          a href="/{{ .Data.URL }}/{{ dec .Data.Pagenum }}"
+            | <
+        {{ end }}
 
-      | {{ .Data.Pagenum }}
+        | {{ .Data.Pagenum }}
 
-      {{ $flen := len .Data.Fics }}
-      {{ if eq $flen 10 }}
-        a href="/fics/index/{{ inc .Data.Pagenum }}"
-          | >
-      {{ end }}
+        {{ $flen := len .Data.Fics }}
+        {{ if eq $flen 10 }}
+          a href="/{{ .Data.URL }}/{{ inc .Data.Pagenum }}"
+            | >
+        {{ end }}

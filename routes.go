@@ -110,7 +110,7 @@ func (si *Site) listFics(w http.ResponseWriter, req *http.Request, s sessions.Se
 
 	pageNum, err := strconv.Atoi(params["page"])
 	if err != nil {
-		si.doError(w, req, 400, "invalid page number \""+params["page"]+"\"")
+		si.doError(w, req, http.StatusBadRequest, "invalid page number \""+params["page"]+"\"")
 		return
 	}
 
@@ -124,10 +124,16 @@ func (si *Site) listFics(w http.ResponseWriter, req *http.Request, s sessions.Se
 	data := struct {
 		Pagenum int
 		Fics    []database.Fic
+		Route   string
 	}{
 		Pagenum: pageNum,
 		Fics:    fics,
+		Route:   "fics/index",
 	}
 
 	si.renderTemplate(http.StatusOK, "ficlist", data, s, r)
+}
+
+func (si *Site) getCreateFic(s sessions.Session, r acerender.Render) {
+	si.renderTemplate(http.StatusOK, "ficedit", nil, s, r)
 }

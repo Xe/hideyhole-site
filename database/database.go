@@ -199,7 +199,6 @@ func (d *Database) GetFics(num, pageNum int) ([]Fic, error) {
 	q := datastore.NewQuery("Fic").
 		Limit(num).
 		Offset(pageNum * num).
-		Order("-Edited").
 		Order("-Created")
 
 	fics := []Fic{}
