@@ -10,6 +10,7 @@ import (
 	"github.com/Xe/hideyhole-site/discordwidget"
 	"github.com/Xe/hideyhole-site/interop"
 	"github.com/Xe/martini-oauth2"
+	"github.com/extemporalgenome/slug"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/sessions"
 	"github.com/microcosm-cc/bluemonday"
@@ -152,7 +153,7 @@ func (si *Site) postCreateFic(w http.ResponseWriter, req *http.Request, form Cre
 	unsafe := blackfriday.MarkdownCommon([]byte(form.Description))
 	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
 
-	err := si.db.PutFic(&database.Fic{
+	fic := &database.Fic{
 		ID:       id.String(),
 		Created:  time.Now(),
 		AuthorID: s.Get("uid").(string),
@@ -160,10 +161,42 @@ func (si *Site) postCreateFic(w http.ResponseWriter, req *http.Request, form Cre
 
 		Description:     form.Description,
 		DescriptionHTML: string(html),
-	})
+	}
 
+	err := si.db.PutFic(fic)
 	if err != nil {
 		si.log.Println(err)
 		si.doError(w, req, http.StatusInternalServerError, "data not saved, please try again")
+		return
 	}
+
+	http.Redirect(w, req, "/fics/"+slug.Slug(fic.Title)+"/"+fic.ID, http.StatusFound)
+}
+
+func (si *Site) getFic(w http.ResponseWriter, req *http.Request, s sessions.Session, r acerender.Render, params martini.Params) {
+	id := params["id"]
+	log.Println(id)
+
+	fic, chapters, err := si.db.GetFicAndChapters(id)
+	if err != nil {
+		switch err {
+		case database.ErrNoFicFound:
+			si.doError(w, req, http.StatusNotFound, "not found")
+			return
+		default:
+			log.Println(err)
+			si.doError(w, req, http.StatusInternalServerError, "cannot fetch fic")
+			return
+		}
+	}
+
+	data := struct {
+		Fic      *database.Fic
+		Chapters map[string]database.Chapter
+	}{
+		Fic:      fic,
+		Chapters: chapters,
+	}
+
+	si.renderTemplate(http.StatusOK, "fic", data, s, r)
 }

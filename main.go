@@ -155,6 +155,14 @@ func main() {
 				"inc": func(a int) int {
 					return a + 1
 				},
+				"sget": func(s sessions.Session, key string) string {
+					val := s.Get(key)
+					if val == nil {
+						return ""
+					}
+
+					return val.(string)
+				},
 			},
 		},
 	}))
@@ -167,8 +175,8 @@ func main() {
 			http.Error(w, "Bad request", http.StatusBadRequest)
 		},
 	}))
-	m.Use(si.populateInfo)
 
+	// Routes
 	m.Get("/", si.getIndex)
 	m.Get("/chat", si.getChat)
 	m.Get("/health", si.getHealth)
@@ -176,6 +184,7 @@ func main() {
 	m.Group("/profile", func(r martini.Router) {
 		r.Get("/me", si.getMyProfile)
 		r.Get("/:slug/:id", si.getUserByID)
+		r.Get("/:id", si.getUserByID)
 	}, moauth2.LoginRequired)
 
 	m.Group("/fics", func(r martini.Router) {
@@ -184,6 +193,7 @@ func main() {
 		r.Get("/index/:page", si.listFics)
 		r.Get("/create", si.getCreateFic)
 		r.Post("/create", binding.Bind(CreateFicForm{}), si.postCreateFic)
+		r.Get("/:slug/:id", si.getFic)
 	}, moauth2.LoginRequired)
 
 	if *debug {

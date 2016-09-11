@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"errors"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -54,18 +55,7 @@ func Init(namespace, projectID string) (*Database, error) {
 }
 
 func (d *Database) GetUser(id string) (*interop.DiscordUser, error) {
-	tx, err := d.ds.NewTransaction(d.ctx, datastore.MaxAttempts(1))
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	dUser, _, err := d.getUser(d.ctx, tx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = tx.Commit()
+	dUser, _, err := d.getUser(d.ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -73,15 +63,14 @@ func (d *Database) GetUser(id string) (*interop.DiscordUser, error) {
 	return dUser, err
 }
 
-func (d *Database) getUser(ctx context.Context, tx *datastore.Transaction, id string) (*interop.DiscordUser, *datastore.Key, error) {
+func (d *Database) getUser(ctx context.Context, id string) (*interop.DiscordUser, *datastore.Key, error) {
 	results := []interop.DiscordUser{}
 	var result *interop.DiscordUser
 	var resultKey *datastore.Key
 
 	q := datastore.NewQuery("DiscordUser").
 		Filter("ID =", id).
-		Limit(1).
-		Transaction(tx)
+		Limit(1)
 
 	resultKeys, err := d.ds.GetAll(ctx, q, &results)
 	if err != nil {
@@ -104,7 +93,7 @@ func (d *Database) getUser(ctx context.Context, tx *datastore.Transaction, id st
 }
 
 func (d *Database) PutUser(dUser *interop.DiscordUser) error {
-	tx, err := d.ds.NewTransaction(d.ctx, datastore.MaxAttempts(1))
+	tx, err := d.ds.NewTransaction(d.ctx)
 	if err != nil {
 		return err
 	}
@@ -124,7 +113,7 @@ func (d *Database) PutUser(dUser *interop.DiscordUser) error {
 }
 
 func (d *Database) putUser(ctx context.Context, tx *datastore.Transaction, dUser *interop.DiscordUser) (*datastore.PendingKey, error) {
-	_, key, err := d.getUser(ctx, tx, dUser.ID)
+	_, key, err := d.getUser(ctx, dUser.ID)
 	if err != nil && err != ErrNoUserFound {
 		tx.Rollback()
 		return nil, err
@@ -150,18 +139,7 @@ type Fic struct {
 }
 
 func (d *Database) GetFic(id string) (*Fic, error) {
-	tx, err := d.ds.NewTransaction(d.ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	fic, _, err := d.getFic(d.ctx, tx, id)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = tx.Commit()
+	fic, _, err := d.getFic(d.ctx, nil, id)
 	if err != nil {
 		return nil, err
 	}
@@ -174,15 +152,19 @@ func (d *Database) getFic(ctx context.Context, tx *datastore.Transaction, id str
 	var result *Fic
 	var resultKey *datastore.Key
 
-	q := datastore.NewQuery("Fic").
+	q := datastore.NewQuery("Story").
 		Filter("ID =", id).
-		Limit(1).
-		Transaction(tx)
+		Limit(1)
+
+	if tx != nil {
+		q = q.Transaction(tx)
+	}
 
 	resultKeys, err := d.ds.GetAll(ctx, q, results)
 	if err != nil {
 		switch err {
-		case datastore.ErrNoSuchEntity:
+		case datastore.ErrNoSuchEntity, datastore.ErrInvalidEntityType:
+			log.Printf("%#v", q)
 			return nil, nil, ErrNoFicFound
 		default:
 			return nil, nil, err
@@ -196,7 +178,7 @@ func (d *Database) getFic(ctx context.Context, tx *datastore.Transaction, id str
 }
 
 func (d *Database) GetFics(num, pageNum int) ([]Fic, error) {
-	q := datastore.NewQuery("Fic").
+	q := datastore.NewQuery("Story").
 		Limit(num).
 		Offset(pageNum * num).
 		Order("-Created")
@@ -219,6 +201,7 @@ func (d *Database) GetFicAndChapters(ficID string) (*Fic, map[string]Chapter, er
 
 	fic, ficKey, err := d.getFic(d.ctx, tx, ficID)
 	if err != nil {
+		log.Println(err)
 		return nil, nil, err
 	}
 
@@ -230,7 +213,12 @@ func (d *Database) GetFicAndChapters(ficID string) (*Fic, map[string]Chapter, er
 	var chapters []Chapter
 	_, err = d.ds.GetAll(d.ctx, q, &chapters)
 	if err != nil {
-		return nil, nil, err
+		switch err {
+		case datastore.ErrInvalidEntityType, datastore.ErrNoSuchEntity:
+			return fic, map[string]Chapter{}, nil
+		default:
+			return nil, nil, err
+		}
 	}
 
 	result := map[string]Chapter{}
@@ -269,7 +257,7 @@ func (d *Database) putFic(ctx context.Context, tx *datastore.Transaction, fic *F
 	}
 
 	if key == nil {
-		key = datastore.NewIncompleteKey(ctx, "Fic", nil)
+		key = datastore.NewIncompleteKey(ctx, "Story", nil)
 	}
 
 	return tx.Put(key, fic)
