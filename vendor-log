@@ -203,3 +203,11 @@ a69f0f19d246419bb931b0ac8f4f8d3f3e6d4feb	google.golang.org/api/transport
 0320c85e32e0015b090f08a5d1324d5ab6094f07	github.com/extemporalgenome/slug
 cf4986612c83df6c55578ba198316d1684a9a287	golang.org/x/text/transform
 cf4986612c83df6c55578ba198316d1684a9a287	golang.org/x/text/unicode/norm
+33e0aa1cb7c019ccc3fbe049a8262a6403d30504	github.com/codegangsta/inject
+c257c412d547ac70fcaf5596c1a50a7cb832c1fc	github.com/go-martini/martini
+05d3e151b6cf34dacac6306226a33db68459a3b5	github.com/martini-contrib/binding
+7d0cad0ac7ef5e3afd74816444b44b56327422a4	github.com/microcosm-cc/bluemonday
+35eb537633d9950afc8ae7bdf0edb6134584e9fc	github.com/russross/blackfriday
+10ef21a441db47d8b13ebcc5fd2310f636973c77	github.com/shurcooL/sanitized_anchor_name
+cfe3c2a7525b50c3d707256e371c90938cfef98a	golang.org/x/net/html
+cfe3c2a7525b50c3d707256e371c90938cfef98a	golang.org/x/net/html/atom

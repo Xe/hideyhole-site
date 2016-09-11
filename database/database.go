@@ -224,7 +224,8 @@ func (d *Database) GetFicAndChapters(ficID string) (*Fic, map[string]Chapter, er
 
 	q := datastore.NewQuery("Chapter").
 		Filter("FicID =", ficID).
-		Ancestor(ficKey).Project("ID", "FicID", "Title")
+		Ancestor(ficKey).
+		Project("ID", "FicID", "Title")
 
 	var chapters []Chapter
 	_, err = d.ds.GetAll(d.ctx, q, &chapters)
@@ -239,6 +240,26 @@ func (d *Database) GetFicAndChapters(ficID string) (*Fic, map[string]Chapter, er
 	}
 
 	return fic, result, nil
+}
+
+func (d *Database) PutFic(fic *Fic) error {
+	tx, err := d.ds.NewTransaction(d.ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	_, err = d.putFic(d.ctx, tx, fic)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *Database) putFic(ctx context.Context, tx *datastore.Transaction, fic *Fic) (*datastore.PendingKey, error) {

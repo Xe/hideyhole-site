@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Xe/hideyhole-site/database"
 	"github.com/Xe/hideyhole-site/discordwidget"
@@ -11,6 +12,8 @@ import (
 	"github.com/Xe/martini-oauth2"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/sessions"
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/russross/blackfriday"
 	acerender "github.com/yosssi/martini-acerender"
 )
 
@@ -136,4 +139,31 @@ func (si *Site) listFics(w http.ResponseWriter, req *http.Request, s sessions.Se
 
 func (si *Site) getCreateFic(s sessions.Session, r acerender.Render) {
 	si.renderTemplate(http.StatusOK, "ficcreate", nil, s, r)
+}
+
+type CreateFicForm struct {
+	Name        string `form:"name" binding:"required"`
+	Description string `form:"description" binding:"required"`
+}
+
+func (si *Site) postCreateFic(w http.ResponseWriter, req *http.Request, form CreateFicForm, s sessions.Session) {
+	id := si.db.IDGen.Generate()
+
+	unsafe := blackfriday.MarkdownCommon([]byte(form.Description))
+	html := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
+
+	err := si.db.PutFic(&database.Fic{
+		ID:       id.String(),
+		Created:  time.Now(),
+		AuthorID: s.Get("uid").(string),
+		Title:    form.Name,
+
+		Description:     form.Description,
+		DescriptionHTML: string(html),
+	})
+
+	if err != nil {
+		si.log.Println(err)
+		si.doError(w, req, http.StatusInternalServerError, "data not saved, please try again")
+	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/facebookgo/flagconfig"
 	"github.com/facebookgo/flagenv"
 	"github.com/go-martini/martini"
+	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/csrf"
 	"github.com/martini-contrib/sessions"
 	"github.com/yosssi/ace"
@@ -178,9 +179,11 @@ func main() {
 	}, moauth2.LoginRequired)
 
 	m.Group("/fics", func(r martini.Router) {
+		r.Get("", si.listFics)
 		r.Get("/", si.listFics)
 		r.Get("/index/:page", si.listFics)
 		r.Get("/create", si.getCreateFic)
+		r.Post("/create", binding.Bind(CreateFicForm{}), si.postCreateFic)
 	}, moauth2.LoginRequired)
 
 	if *debug {
@@ -189,15 +192,17 @@ func main() {
 			log.Printf("The pprof routes are enabled in production!!! Please act with care.")
 		}
 
-		m.Get("/debug/pprof", pprof.Index)
-		m.Get("/debug/pprof/cmdline", pprof.Cmdline)
-		m.Get("/debug/pprof/profile", pprof.Profile)
-		m.Get("/debug/pprof/symbol", pprof.Symbol)
-		m.Post("/debug/pprof/symbol", pprof.Symbol)
-		m.Get("/debug/pprof/block", pprof.Handler("block").ServeHTTP)
-		m.Get("/debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
-		m.Get("/debug/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
-		m.Get("/debug/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+		m.Group("/debug/pprof", func(r martini.Router) {
+			r.Get("", pprof.Index)
+			r.Get("/cmdline", pprof.Cmdline)
+			r.Get("/profile", pprof.Profile)
+			r.Get("/symbol", pprof.Symbol)
+			r.Post("/symbol", pprof.Symbol)
+			r.Get("/block", pprof.Handler("block").ServeHTTP)
+			r.Get("/heap", pprof.Handler("heap").ServeHTTP)
+			r.Get("/goroutine", pprof.Handler("goroutine").ServeHTTP)
+			r.Get("/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+		})
 	}
 
 	m.RunOnAddr(":" + *port)
