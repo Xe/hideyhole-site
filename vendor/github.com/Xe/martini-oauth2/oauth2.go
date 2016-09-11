@@ -152,8 +152,7 @@ func handleOAuth2Callback(f *oauth2.Config, s sessions.Session, w http.ResponseW
 	code := r.URL.Query().Get("code")
 	t, err := f.Exchange(oauth2.NoContext, code)
 	if err != nil {
-		// Pass the error message, or allow dev to provide its own
-		// error handler.
+		log.Println(err)
 		http.Redirect(w, r, PathError, codeRedirect)
 		return
 	}
