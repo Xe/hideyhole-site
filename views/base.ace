@@ -2,7 +2,7 @@
 html lang=en
   head
     = yield title
-      title Cadey's Sub-Aquatic Hidey-Hole
+      title Hidey Hole
 
     link rel="stylesheet" type="text/css" href="/_css/global.css"
     link rel="stylesheet" type="text/css" href="/_css/futaba.css"
@@ -27,6 +27,8 @@ html lang=en
           |  | 
           a href="/chat" style="text-decoration: underline;" Chat
           |  | 
+          a href="/fics" style="text-decoration: underline;" Fics
+          |  | 
           a href="/logout" style="text-decoration: underline;" Logout
           |  ]
       {{ end }}
@@ -34,7 +36,7 @@ html lang=en
     .container
       .logo
         a href="/"
-          | Cadey's Sub-Aquatic Hidey-Hole
+          | Hidey Hole
 
         hr width="90%"
 

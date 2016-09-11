@@ -1,6 +1,6 @@
 = content title
   title
-    | {{ .Data.User.Username }} | Cadey's Sub-Aquatic Hidey-Hole
+    | {{ .Data.User.Username }} | Hidey Hole
 
 = content body
   span id="thumb1"

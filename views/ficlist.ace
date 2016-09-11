@@ -1,6 +1,6 @@
 = content title
   title
-    | Fics - page {{ .Data.Pagenum }} | Cadey's Sub-Aquatic Hidey-Hole
+    | Fics - page {{ .Data.Pagenum }} | Hidey Hole
 
 = content body
   div class="message"
@@ -11,19 +11,19 @@
       | Create
 
     {{ $flen := len .Data.Fics }}
-      {{ if eq $flen 0 }}
-      table class="postform"
-        tbody
-          {{ range .Data.Fics }}
-            tr
-              td class="postblock"
-                a href="/fics/{{ slug .Name }}/{{ .ID }}"
-                  | {{ .Name }}
-          {{ end }}
-    {{ else }}
-      p
-        | No fics found matching requested criteria.
-    {{ end }}
+    table class="postform"
+      tbody
+        {{ range .Data.Fics }}
+          tr
+            td class="postblock"
+              a href="/fics/{{ slug .Title }}/{{ .ID }}"
+                | {{ .Title }}
+              |      
+              | {{ .Created }}
+            td
+              a href="/profile/{{ .AuthorID }}"
+                | Author
+        {{ end }}
 
     center
       p style="align: center;"

@@ -1,5 +1,5 @@
 = content title
-  title Chat | Cadey's Sub-Aquatic Hidey-Hole
+  title Chat | Hidey Hole
 
 = content body
   {{ $guild := .Data }}
@@ -26,24 +26,33 @@
 
   h2 Online Members
 
-  table
-    {{ range $index, $member := $guild.Members }}
-      tr
-        td
-          img src="{{ $member.AvatarURL }}" width=64 height=64
-        td
-          {{ if notequals $member.Nick "" }}
-            | {{ $member.Nick }}
-            br
-            small
-              | ({{ $member.Username }})
-          {{ else }}
-            | {{ $member.Username }}
-          {{ end }}
-        td
-          {{ if notequals $member.GetGame "" }}
-            small
-              | Playing 
-            | {{ $member.GetGame }}
-          {{ end }}
-    {{ end }}
+  {{ $uid := sget .Session "uid" }}
+  {{ if equals $uid "" }}
+    p
+      | {{ len $guild.Members }} users online. 
+      a href="/login"
+        | Login
+      |  to see more information.
+  {{ else }}
+    table
+      {{ range $index, $member := $guild.Members }}
+        tr
+          td
+            img src="{{ $member.AvatarURL }}" width=64 height=64
+          td
+            {{ if notequals $member.Nick "" }}
+              | {{ $member.Nick }}
+              br
+              small
+                | ({{ $member.Username }})
+            {{ else }}
+              | {{ $member.Username }}
+            {{ end }}
+          td
+            {{ if notequals $member.GetGame "" }}
+              small
+                | Playing 
+              | {{ $member.GetGame }}
+            {{ end }}
+      {{ end }}
+  {{ end }}

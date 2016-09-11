@@ -1,8 +1,11 @@
 = content title
   title
-    | {{ .Data.Fic.Title }} | Cadey's Sub-Aquatic Hidey-Hole
+    | {{ .Data.Fic.Title }} | Hidey Hole
 
 = content body
+  {{ $uid := sget .Session "uid" }}
+  {{ $owner := eq $uid .Data.Fic.AuthorID }}
+
   div class="message"
     h2 class="filetitle"
       | {{ .Data.Fic.Title }}
@@ -16,14 +19,15 @@
       | Created: {{ .Data.Fic.Created }}
       | {{ .Data.FicDescription }}
       br
-      {{ if eq .Data.Session.uid .Data.Fic.AuthorID }}
+      {{ if $owner }}
         a href="/fics/{{ .Data.Fic.ID }}/edit"
           | Edit
       {{ end }}
 
     {{ $fic := .Data.Fic }}
-    {{ $user := .Data.Session }}
     {{ $clen := len .Data.Chapters }}
+    {{ $chapters := .Data.Chapters }}
+
     {{ if ne $clen 0 }}
       span class="postertrip"
         h2
@@ -31,25 +35,28 @@
 
       table class="postform"
         tbody
-          {{ range .Data.Chapters }}
+          {{ range .Data.Fic.Chapters }}
+            {{ $chapter := index $chapters . }}
             tr
               td class="postblock"
-                | {{ .Created }} 
-                a href="/fics/{{ slug $fic.Name }}/{{ $fic.ID }}/{{ slug .Name }}/{{ .ID }}"
-                  | {{ .Name }}
-              {{ if eq .Data.Session.uid $fic.AuthorID }}
+                | {{ $chapter.Created }} 
+                a href="/fics/{{ slug $fic.Name }}/{{ $fic.ID }}/{{ slug $chapter.Name }}/{{ $chapter.ID }}"
+                  | {{ $chapter.Name }}
+              {{ if $owner }}
               td
                 a href="/fics/{{ $fic.ID }}/{{ $user.uid }}/edit"
                   | Edit
               {{ end }}
           {{ end }}
-          {{ if eq .Data.Session.uid $fic.AuthorID }}
-            tr
-              td
-                a href="/fics/{{ $fic.ID }}/add-chapter"
-                  | Add Chapter
-          {{ end }}
     {{ else }}
       p
         | No chapters found.
     {{ end }}
+
+    {{ if $owner }}
+      tr
+        td
+          a href="/fics/{{ $fic.ID }}/add-chapter"
+            | Add Chapter
+    {{ end }}
+
