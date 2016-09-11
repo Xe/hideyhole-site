@@ -150,7 +150,7 @@ type Fic struct {
 }
 
 func (d *Database) GetFic(id string) (*Fic, error) {
-	tx, err := d.ds.NewTransaction(d.ctx, datastore.MaxAttempts(1))
+	tx, err := d.ds.NewTransaction(d.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -195,21 +195,36 @@ func (d *Database) getFic(ctx context.Context, tx *datastore.Transaction, id str
 	return result, resultKey, nil
 }
 
-func (d *Database) GetFicAndChapters(ficID string) (*Fic, []Chapter, error) {
-	tx, err := d.ds.NewTransaction(d.ctx, datastore.MaxAttempts(1))
+func (d *Database) GetFics(num, pageNum int) ([]Fic, error) {
+	q := datastore.NewQuery("Fic").
+		Limit(num).
+		Offset(pageNum * num).
+		Order("-Edited").
+		Order("-Created")
+
+	fics := []Fic{}
+	_, err := d.ds.GetAll(d.ctx, q, &fics)
+	if err != nil && err != datastore.ErrNoSuchEntity {
+		return nil, err
+	}
+
+	return fics, nil
+}
+
+func (d *Database) GetFicAndChapters(ficID string) (*Fic, map[string]Chapter, error) {
+	tx, err := d.ds.NewTransaction(d.ctx)
 	if err != nil {
 		return nil, nil, err
 	}
 	defer tx.Rollback()
 
-	fic, _, err := d.getFic(d.ctx, tx, ficID)
+	fic, ficKey, err := d.getFic(d.ctx, tx, ficID)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	q := datastore.NewQuery("Chapter").
-		Filter("FicID =", ficID).
-		Transaction(tx)
+		Filter("FicID =", ficID).Ancestor(ficKey)
 
 	var chapters []Chapter
 	_, err = d.ds.GetAll(d.ctx, q, &chapters)
@@ -217,7 +232,13 @@ func (d *Database) GetFicAndChapters(ficID string) (*Fic, []Chapter, error) {
 		return nil, nil, err
 	}
 
-	return fic, chapters, nil
+	result := map[string]Chapter{}
+
+	for _, chapter := range chapters {
+		result[chapter.ID] = chapter
+	}
+
+	return fic, result, nil
 }
 
 func (d *Database) putFic(ctx context.Context, tx *datastore.Transaction, fic *Fic) (*datastore.PendingKey, error) {

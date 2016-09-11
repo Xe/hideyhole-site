@@ -1,7 +1,9 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/Xe/hideyhole-site/database"
 	"github.com/Xe/hideyhole-site/discordwidget"
@@ -97,4 +99,35 @@ func (si *Site) getUserByID(w http.ResponseWriter, req *http.Request, s sessions
 	si.renderTemplate(http.StatusOK, "profile", data, s, r)
 }
 
-func (si *Site) listFics() {}
+const (
+	ficsPerPage = 10
+)
+
+func (si *Site) listFics(w http.ResponseWriter, req *http.Request, s sessions.Session, r acerender.Render, params martini.Params) {
+	if params["page"] == "" {
+		params["page"] = "1"
+	}
+
+	pageNum, err := strconv.Atoi(params["page"])
+	if err != nil {
+		si.doError(w, req, 400, "invalid page number \""+params["page"]+"\"")
+		return
+	}
+
+	fics, err := si.db.GetFics(ficsPerPage, pageNum-1)
+	if err != nil {
+		log.Println(err)
+		si.doError(w, req, http.StatusInternalServerError, "cannot fetch fics")
+		return
+	}
+
+	data := struct {
+		Pagenum int
+		Fics    []database.Fic
+	}{
+		Pagenum: pageNum,
+		Fics:    fics,
+	}
+
+	si.renderTemplate(http.StatusOK, "ficlist", data, s, r)
+}

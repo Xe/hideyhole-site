@@ -148,6 +148,12 @@ func main() {
 					return a != b
 				},
 				"slug": slug.Slug,
+				"dec": func(a int) int {
+					return a - 1
+				},
+				"inc": func(a int) int {
+					return a + 1
+				},
 			},
 		},
 	}))
@@ -166,8 +172,15 @@ func main() {
 	m.Get("/chat", si.getChat)
 	m.Get("/health", si.getHealth)
 
-	m.Get("/profile/me", moauth2.LoginRequired, si.getMyProfile)
-	m.Get("/profile/:slug/:id", moauth2.LoginRequired, si.getUserByID)
+	m.Group("/profile", func(r martini.Router) {
+		r.Get("/me", si.getMyProfile)
+		r.Get("/:slug/:id", si.getUserByID)
+	}, moauth2.LoginRequired)
+
+	m.Group("/fic", func(r martini.Router) {
+		r.Get("/", si.listFics)
+		r.Get("/index/:page", si.listFics)
+	}, moauth2.LoginRequired)
 
 	if *debug {
 		log.Printf("Adding /debug routes")

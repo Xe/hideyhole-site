@@ -1,0 +1,34 @@
+= content title
+  title
+    | Fics - page {{ .Data.Pagenum }} | Cadey's Sub-Aquatic Hidey-Hole
+
+= content body
+  div class="message"
+    h2 class="filetitle"
+      | Fics
+
+    a href="/fics/create"
+      | Create
+
+    table class="postform"
+      tbody
+      {{ range .Data.Fics }}
+        tr
+          td class="postblock"
+            a href="/fics/{{ slug .Name }}/{{ .ID }}"
+              | {{ .Name }}
+      {{ end }}
+
+    p style="align: center;"
+      {{ if ne .Data.Pagenum 1 }}
+        a href="/fics/index/{{ dec .Data.Pagenum }}"
+          | <
+      {{ end }}
+
+      | {{ .Data.Pagenum }}
+
+      {{ $flen := len .Data.Fics }}
+      {{ if eq $flen 10 }}
+        a href="/fics/index/{{ inc .Data.Pagenum }}"
+          | >
+      {{ end }}
