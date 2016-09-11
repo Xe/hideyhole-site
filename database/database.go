@@ -223,7 +223,8 @@ func (d *Database) GetFicAndChapters(ficID string) (*Fic, map[string]Chapter, er
 	}
 
 	q := datastore.NewQuery("Chapter").
-		Filter("FicID =", ficID).Ancestor(ficKey)
+		Filter("FicID =", ficID).
+		Ancestor(ficKey).Project("ID", "FicID", "Title")
 
 	var chapters []Chapter
 	_, err = d.ds.GetAll(d.ctx, q, &chapters)

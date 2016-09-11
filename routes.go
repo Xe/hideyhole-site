@@ -135,5 +135,5 @@ func (si *Site) listFics(w http.ResponseWriter, req *http.Request, s sessions.Se
 }
 
 func (si *Site) getCreateFic(s sessions.Session, r acerender.Render) {
-	si.renderTemplate(http.StatusOK, "ficedit", nil, s, r)
+	si.renderTemplate(http.StatusOK, "ficcreate", nil, s, r)
 }
