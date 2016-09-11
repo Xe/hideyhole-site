@@ -1,0 +1,29 @@
+= content title
+  title
+    | Create Fic | Cadey's Sub-Aquatic Hidey-Hole
+
+= content body
+  div class="postarea"
+    form name="postform" id="postform" action="/fics/create" method="POST" enctype="multipart/form-data"
+      table class="postform"
+        tbody
+          tr
+            td class="postblock"
+              | Name
+            td
+              input type="text" name="name" size="28" maxlength="75" accesskey="n"
+              |      
+              input type="submit" value="Submit" accesskey="s"
+
+          tr
+            td class="postblock"
+              | Description
+
+            td
+              textarea id="description" name="description" cols="48" rows="4" accesskey="d"
+
+          tr
+            td colspan="2" class="rules"
+              ul
+                li
+                  | Name and description must be filled out.

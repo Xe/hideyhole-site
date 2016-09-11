@@ -8,14 +8,21 @@
       | {{ .Data.Fic.Title }}
     span class="postername"
       h2
-        | By 
+        | By
         a href="/profiles/{{ .Data.Author.ID }}"
           | {{ .Data.Author.Username }}
 
     p
+      | Created: {{ .Data.Fic.Created }}
       | {{ .Data.FicDescription }}
+      br
+      {{ if eq .Data.Session.uid .Data.Fic.AuthorID }}
+        a href="/fics/{{ .Data.Fic.ID }}/edit"
+          | Edit
+      {{ end }}
 
     {{ $fic := .Data.Fic }}
+    {{ $user := .Data.Session }}
     {{ $clen := len .Data.Chapters }}
     {{ if ne $clen 0 }}
       span class="postertrip"
@@ -27,8 +34,20 @@
           {{ range .Data.Chapters }}
             tr
               td class="postblock"
+                | {{ .Created }} 
                 a href="/fics/{{ slug $fic.Name }}/{{ $fic.ID }}/{{ slug .Name }}/{{ .ID }}"
                   | {{ .Name }}
+              {{ if eq .Data.Session.uid $fic.AuthorID }}
+              td
+                a href="/fics/{{ $fic.ID }}/{{ $user.uid }}/edit"
+                  | Edit
+              {{ end }}
+          {{ end }}
+          {{ if eq .Data.Session.uid $fic.AuthorID }}
+            tr
+              td
+                a href="/fics/{{ $fic.ID }}/add-chapter"
+                  | Add Chapter
           {{ end }}
     {{ else }}
       p
